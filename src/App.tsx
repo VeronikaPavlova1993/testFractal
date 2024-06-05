@@ -1,5 +1,10 @@
+import axios from 'axios';
 import './App.css';
-import Input from './components/Input';
+import FormRequest from './components/FormRequest/FormRequest';
+import React from 'react';
+import { IRepo, IUser } from './interface';
+import User from './components/User/User';
+import Repo from './components/Repo/Repo';
 
 // ЗАДАЧА:
 // Создать мини-приложение, где есть форма, в которой
@@ -29,15 +34,59 @@ import Input from './components/Input';
 // Все вопросы по заданию и результаты его выполнения присылать сюда - https://t.me/temamint
 
 function App() {
-  return (
-    <>
-      <Input />
-      <h2>Тестовое задание</h2>
-      <p>
-        В файле <b>src/App.tsx</b> можно найти комментарии с описанием задачи.
-      </p>
-    </>
-  );
+ const [request, setRequest] = React.useState<'user' | 'repo'>('user');
+ const [value, setValue] = React.useState<string>('');
+ const [data, setData] = React.useState<IUser | IRepo | null>(null);
+ const [error, setError] = React.useState<string>('');
+
+ function onChangeInput(e: React.ChangeEvent<HTMLInputElement>) {
+  setValue(e.target.value);
+ }
+
+ function onChangeSelect(e: React.ChangeEvent<HTMLSelectElement>) {
+  setRequest(e.target.value as 'user' | 'repo');
+ }
+
+ async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  event.preventDefault();
+  try {
+   if (request === 'user') {
+    const response = await axios.get<IUser>(
+     `https://api.github.com/users/${value}`
+    );
+    setData(response.data);
+    setError('');
+   } else {
+    const response = await axios.get<IRepo>(
+     `https://api.github.com/repos/${value}`
+    );
+    setData(response.data);
+    setError('');
+   }
+  } catch (err) {
+   setError('Произошла ошибка. Пожалуйста, повторите запрос');
+   setData(null);
+  }
+ }
+
+ return (
+  <>
+   <h2>Тестовое задание</h2>
+   <FormRequest
+    onChangeInput={onChangeInput}
+    onChangeSelect={onChangeSelect}
+    handleSubmit={handleSubmit}
+    value={value}
+    request={request}
+   />
+
+   {request === 'user' && data && <User data={data as IUser} />}
+
+   {request === 'repo' && data && <Repo data={data as IRepo} />}
+
+   {error !== '' && <div>{error}</div>}
+  </>
+ );
 }
 
 export default App;
